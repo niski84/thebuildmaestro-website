@@ -1,0 +1,23 @@
+@import 'components/variables';
+@import 'components/fonts';
+@import 'components/ie10bug';
+@import 'components/sidemenu';
+@import 'components/list-text-content';
+@import 'components/article';
+@import 'components/photos';
+
+// Override bootstrap bright blue header:
+.list-group-item.active,
+.list-group-item.active:hover {
+	background-color: #4A5767;
+	border-color: #717171;
+}   
+
+h1, h2, h3, h4, h5, h6, p {
+	font-family: 'Lato','Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+
+p {
+	font-size: 1.1em;
+}
+

@@ -1,0 +1,8 @@
+[metadata]
+title: AWS boto scripts
+author: Nick Skitch
+last_updated: 2017-01-10
+written_on: 2017-01-10
+distributions: RHEL_6+7 CentOS_6+7
+url: https://github.com/niski84/aws-cost-optimization
+description: AWS boto scripts

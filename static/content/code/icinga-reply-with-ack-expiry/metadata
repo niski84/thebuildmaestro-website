@@ -1,0 +1,8 @@
+[metadata]
+title: boto scripts for aws cost savings project
+author: Nick Skitch
+last_updated: 2017-09-10
+written_on: 2017-09-10
+distributions: aws
+url: https://github.com/niski84/aws-cost-optimization
+description: some scripts I used on an AWS cost optimization project: Reporting ec2, ebs, cloudwatch metrics. build terminate/stop ec2
