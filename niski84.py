@@ -46,51 +46,51 @@ CACHE_TIMEOUT = 604800
 # dict with all the content details
 # Articles and Code are treated similarly
 # So we'll keep a structure like:
-# content_metadata = { 'articles' => {'id1'=>{author,url,etc}}, {'id2'=> ... }
+# site_content_registry = { 'articles' => {'id1'=>{author,url,etc}}, {'id2'=> ... }
 #		               'code' => {'id1'=>{author,url,etc},  } }
 
-content_metadata = {}
-for type in [ 'articles', 'code' ]:
-	content_dir_path = os.path.join(CONTENT_PATH, type)
+site_content_registry = {}
+for content_type_category in [ 'articles', 'code' ]:
+	content_dir_path = os.path.join(CONTENT_PATH, content_type_category)
 	content_dirs = os.listdir(content_dir_path)
 
-	final_dict = {}
+	type_specific_dict = {}
 	# For each dir here, read the metadata file
 	for content_dir in content_dirs:
-		content_dict = {}
+		item_metadata_dict = {}
 		config = configparser.ConfigParser()
 		metadata_path = os.path.join(content_dir_path, content_dir, 'metadata')
 		if not os.path.isfile(metadata_path):
 			print("Could not read metadata file: {0}".format(metadata_path), file=sys.stderr)
 			continue
 		config.read( metadata_path )
-		content_id = content_dir
+		content_item_id = content_dir
 		for key in [ 'title', 'author', 'last_updated', 'written_on', 'distributions', 'description', 'url' ]:
 			try:
-				content_dict[key] = config.get('metadata', key)
+				item_metadata_dict[key] = config.get('metadata', key)
 			except:
-				content_dict[key] = ""
-		final_dict[content_id] = content_dict
-	content_metadata[type] = final_dict
+				item_metadata_dict[key] = ""
+		type_specific_dict[content_item_id] = item_metadata_dict
+	site_content_registry[content_type_category] = type_specific_dict
 
 @app.route('/')
-def index():
-	return redirect(url_for('articles'))
+def render_homepage_redirect():
+	return redirect(url_for('display_articles_listing'))
 
 @app.route('/articles/')
-def articles():
-	return render_template('articles.html', metadata = content_metadata['articles'])
+def display_articles_listing():
+	return render_template('articles.html', metadata = site_content_registry['articles'])
 
 @app.route('/code/')
-def code():
-	return render_template('code.html', metadata = content_metadata['code'])
+def display_code_projects_listing():
+	return render_template('code.html', metadata = site_content_registry['code'])
 
 @app.route('/articles/<id>')
 @app.route('/articles/<id>/')
-def article(id):
+def render_single_article(id):
 
 	# First see if the id exists in our bootup metadata scan:
-	if not id in content_metadata['articles']:
+	if not id in site_content_registry['articles']:
 			return "404", 404
 
 	# The above test should be enough, but just in case (since it involves the filesystem):
@@ -113,7 +113,7 @@ def article(id):
 
 	return render_template('article-display.html',
 		content = content,
-		metadata = content_metadata['articles'][id],
+		metadata = site_content_registry['articles'][id],
 		url = urljoin(CANONICAL_DOMAIN, '/articles/{id}/'.format(id=id)),
 		id = id
 	)
@@ -122,9 +122,9 @@ def article(id):
 # This is for images and files kept in the article dir
 # referenced with relative links in the markdown
 @app.route('/articles/<id>/<content>')
-def article_content(id, content):
+def serve_article_asset(id, content):
 
-	if not id in content_metadata['articles']:
+	if not id in site_content_registry['articles']:
 			return "404", 404
 
 	id = id.replace("..","")
@@ -135,7 +135,7 @@ def article_content(id, content):
 
 # Photos
 @app.route('/photos/')
-def photos():
+def display_photo_gallery():
 	thumbnails = 'thumbnails'
 	# Get a list of filenames from the photopath
 	photos = os.listdir(PHOTO_PATH);
@@ -151,18 +151,18 @@ def photos():
 
 # Contact page
 @app.route('/contact/')
-def contact():
+def render_contact_page():
 	return render_template('contact.html')
 
 
 # 404 page
 @app.route('/404/')
-def not_found():
+def render_error_404():
 	return render_template('404.html')
 
 # Atom feed
 @app.route(ATOM_FEED)
-def atom_feed():
+def generate_atom_rss_feed():
 	if AtomFeed is None:
 		# AtomFeed not available (werkzeug.contrib.atom was removed)
 		# Return a simple text response indicating feed is not available
@@ -173,17 +173,17 @@ def atom_feed():
 	feed = AtomFeed('thebuildmaestro - Articles',
 		feed_url=urljoin(CANONICAL_DOMAIN, ATOM_FEED), url=CANONICAL_DOMAIN,
 		icon=url_for('static', filename='favicon.ico'))
-	for id,metadata in content_metadata['articles'].items():
-		title = metadata['title'];
-		summary = metadata['description']
-		url = urljoin(CANONICAL_DOMAIN, '/articles/{id}/'.format(id=id))
+	for article_id,article_metadata in site_content_registry['articles'].items():
+		title = article_metadata['title'];
+		summary = article_metadata['description']
+		url = urljoin(CANONICAL_DOMAIN, '/articles/{id}/'.format(id=article_id))
 		try:
-			updated = datetime.strptime(metadata['last_updated'], '%Y-%m-%d')
-			published = datetime.strptime(metadata['written_on'], '%Y-%m-%d')
+			updated = datetime.strptime(article_metadata['last_updated'], '%Y-%m-%d')
+			published = datetime.strptime(article_metadata['written_on'], '%Y-%m-%d')
 		except (ValueError, KeyError):
 			# Skip articles with invalid or missing dates
 			continue
-		author = metadata['author']
+		author = article_metadata['author']
 
 		# Only publish articles less than around 4 months old
 		months = 4
@@ -199,7 +199,7 @@ def atom_feed():
 # Static files
 @app.route('/robots.txt')
 @app.route('/favicon.ico')
-def static_files():
+def serve_static_assets():
 	return send_from_directory(app.static_folder, request.path[1:])
 
 if __name__ == '__main__':

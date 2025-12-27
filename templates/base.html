@@ -1,9 +1,9 @@
 {%- set sidemenu = [
-	{ 'name': 'Articles', 'url' : url_for('articles'), 'icon': 'fa-file-text' },
-	{ 'name': 'Code', 'url' : url_for('code'), 'icon': 'fa-git' },
-	{ 'name': 'Photos', 'url' : url_for('photos'), 'icon': 'fa-camera' },
+	{ 'name': 'Articles', 'url' : url_for('display_articles_listing'), 'icon': 'fa-file-text' },
+	{ 'name': 'Code', 'url' : url_for('display_code_projects_listing'), 'icon': 'fa-git' },
+	{ 'name': 'Photos', 'url' : url_for('display_photo_gallery'), 'icon': 'fa-camera' },
 	{ 'name': 'LinkedIn', 'url' : 'https://www.linkedin.com/in/nicholas-s-06589199/', 'icon': 'fa-user' },
-	{ 'name': 'Contact', 'url' : url_for('contact'), 'icon': 'fa-envelope' },
+	{ 'name': 'Contact', 'url' : url_for('render_contact_page'), 'icon': 'fa-envelope' },
 ] -%}
 <!DOCTYPE html>
 <html lang="en">
@@ -41,7 +41,7 @@
 				<nav>
 					<ul class="pure-menu-list">
 						<li><br></li>
-						<a href="{{ url_for('index') }}"><li class="pure-menu-item menu-center"><img class="img-circle" alt="Nick Skitch" height="100px" src="{{url_for('static',filename='images/profile.jpg') }}"> </li></a>
+						<a href="{{ url_for('render_homepage_redirect') }}"><li class="pure-menu-item menu-center"><img class="img-circle" alt="Nick Skitch" height="100px" src="{{url_for('static',filename='images/profile.jpg') }}"> </li></a>
 						<li><br></li>
 						<li class="pure-menu-item menu-center">niski84</li>
 						<li><br></li>

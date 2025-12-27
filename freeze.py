@@ -5,10 +5,10 @@ import os
 freezer = Freezer(app)
 
 # Go through the filesystem to find content (usually article images)
-# for the article_content() function:
+# for the serve_article_asset() function:
 @freezer.register_generator
 # route('/articles/<id>/<content>')
-def article_content():
+def serve_article_asset():
 	# We don't really need to recurse:
 	try:
 		articles = os.listdir( os.path.join(CONTENT_PATH, 'articles') )
@@ -24,7 +24,7 @@ def article_content():
 			continue
 
 @freezer.register_generator
-def static_files():
+def serve_static_assets():
 	for file in ['robots.txt', 'favicon.ico']:
 		yield '/{file}'.format(file=file)
 
