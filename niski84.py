@@ -1,11 +1,34 @@
 from __future__ import print_function
-from flask import Flask, url_for, render_template, Markup, send_from_directory, redirect, request
-from werkzeug.contrib.atom import AtomFeed
+from flask import Flask, url_for, render_template, send_from_directory, redirect, request
+try:
+	from markupsafe import Markup
+except ImportError:
+	# Fallback for older Flask versions
+	try:
+		from flask import Markup
+	except ImportError:
+		from jinja2 import Markup
+try:
+	from werkzeug.contrib.atom import AtomFeed
+except ImportError:
+	# werkzeug.contrib.atom was removed in Werkzeug 1.0+
+	# Using feedgen as alternative
+	try:
+		from feedgen.feed import FeedGenerator
+		AtomFeed = None  # Will handle differently
+	except ImportError:
+		AtomFeed = None
 from datetime import datetime, timedelta
 import os
 import sys
-from urlparse import urljoin
-import ConfigParser
+try:
+	from urllib.parse import urljoin
+except ImportError:
+	from urlparse import urljoin
+try:
+	import configparser
+except ImportError:
+	import ConfigParser as configparser
 import markdown
 
 app = Flask(__name__)
@@ -35,7 +58,7 @@ for type in [ 'articles', 'code' ]:
 	# For each dir here, read the metadata file
 	for content_dir in content_dirs:
 		content_dict = {}
-		config = ConfigParser.ConfigParser()
+		config = configparser.ConfigParser()
 		metadata_path = os.path.join(content_dir_path, content_dir, 'metadata')
 		if not os.path.isfile(metadata_path):
 			print("Could not read metadata file: {0}".format(metadata_path), file=sys.stderr)
@@ -81,14 +104,12 @@ def article(id):
 		return "Forbidden", 403
 
 	# Read file
-	readme_f = open(readme_path, 'r')
-
-	# Generate markdown HTML
-	content = Markup( markdown.markdown( text = readme_f.read(), extensions = [
-		'markdown.extensions.nl2br', 'markdown.extensions.extra', 'markdown.extensions.codehilite' ],
-		extension_configs = { 'markdown.extensions.codehilite': {
-					'guess_lang': False }} ))
-	readme_f.close()
+	with open(readme_path, 'r') as readme_f:
+		# Generate markdown HTML
+		content = Markup( markdown.markdown( text = readme_f.read(), extensions = [
+			'markdown.extensions.nl2br', 'markdown.extensions.extra', 'markdown.extensions.codehilite' ],
+			extension_configs = { 'markdown.extensions.codehilite': {
+						'guess_lang': False }} ))
 
 	return render_template('article-display.html',
 		content = content,
@@ -118,7 +139,8 @@ def photos():
 	thumbnails = 'thumbnails'
 	# Get a list of filenames from the photopath
 	photos = os.listdir(PHOTO_PATH);
-	photos.remove(thumbnails);
+	if thumbnails in photos:
+		photos.remove(thumbnails);
 	photos.sort();
 	photo_relative_path = 'files/photos'
 	photo_thumbnails_relative_path = 'files/photos/' + thumbnails
@@ -141,15 +163,26 @@ def not_found():
 # Atom feed
 @app.route(ATOM_FEED)
 def atom_feed():
+	if AtomFeed is None:
+		# AtomFeed not available (werkzeug.contrib.atom was removed)
+		# Return a simple text response indicating feed is not available
+		from flask import Response
+		return Response('Atom feed generation not available. Please install feedgen or use an older werkzeug version.', 
+		                mimetype='text/plain', status=503)
+	
 	feed = AtomFeed('thebuildmaestro - Articles',
 		feed_url=urljoin(CANONICAL_DOMAIN, ATOM_FEED), url=CANONICAL_DOMAIN,
 		icon=url_for('static', filename='favicon.ico'))
-	for id,metadata in content_metadata['articles'].iteritems():
+	for id,metadata in content_metadata['articles'].items():
 		title = metadata['title'];
 		summary = metadata['description']
 		url = urljoin(CANONICAL_DOMAIN, '/articles/{id}/'.format(id=id))
-		updated = datetime.strptime(metadata['last_updated'], '%Y-%m-%d')
-		published = datetime.strptime(metadata['written_on'], '%Y-%m-%d')
+		try:
+			updated = datetime.strptime(metadata['last_updated'], '%Y-%m-%d')
+			published = datetime.strptime(metadata['written_on'], '%Y-%m-%d')
+		except (ValueError, KeyError):
+			# Skip articles with invalid or missing dates
+			continue
 		author = metadata['author']
 
 		# Only publish articles less than around 4 months old

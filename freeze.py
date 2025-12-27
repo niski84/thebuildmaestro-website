@@ -10,12 +10,18 @@ freezer = Freezer(app)
 # route('/articles/<id>/<content>')
 def article_content():
 	# We don't really need to recurse:
-	articles = os.listdir( os.path.join(CONTENT_PATH, 'articles') )
+	try:
+		articles = os.listdir( os.path.join(CONTENT_PATH, 'articles') )
+	except OSError:
+		return
 	for articleid in articles:
-		for filename in os.listdir( os.path.join(CONTENT_PATH, 'articles', articleid) ):
-			if filename in ['README.md', 'metadata']:
-				continue
-			yield {'id': articleid, 'content': filename }
+		try:
+			for filename in os.listdir( os.path.join(CONTENT_PATH, 'articles', articleid) ):
+				if filename in ['README.md', 'metadata']:
+					continue
+				yield {'id': articleid, 'content': filename }
+		except OSError:
+			continue
 
 @freezer.register_generator
 def static_files():
