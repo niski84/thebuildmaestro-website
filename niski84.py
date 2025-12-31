@@ -33,8 +33,10 @@ import markdown
 
 app = Flask(__name__)
 
-CANONICAL_DOMAIN="https://thebuildmaestro.com"
-ATOM_FEED="/atom.xml"
+# Environment-based configuration
+CANONICAL_DOMAIN = os.environ.get('CANONICAL_DOMAIN', 'https://thebuildmaestro.com')
+ATOM_FEED = os.environ.get('ATOM_FEED', '/atom.xml')
+DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 
 CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
 CONTENT_PATH = os.path.join(CURRENT_PATH, 'static/content')
@@ -202,6 +204,11 @@ def generate_atom_rss_feed():
 def serve_static_assets():
 	return send_from_directory(app.static_folder, request.path[1:])
 
+# Health check endpoint for monitoring
+@app.route('/health')
+def health_check():
+	return {'status': 'healthy', 'service': 'thebuildmaestro'}, 200
+
 if __name__ == '__main__':
-	app.debug = True
+	app.debug = DEBUG
 	app.run(host='0.0.0.0')

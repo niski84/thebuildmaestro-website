@@ -12,7 +12,13 @@
 		{# We want to make the first photo big  grid-item--width2 #}
 		<div class="grid-item{% if number == 0 %} grid-item--width2{% endif %}">
 			<a href="{{url_for('static', filename=photo_relative_path+'/'+photo)}}">
-				<img src="{{url_for('static', filename=photo_thumbnails_relative_path+'/'+photo)}}" />
+				{% if number == 0 %}
+					{# First image loads immediately (above the fold) #}
+					<img src="{{url_for('static', filename=photo_thumbnails_relative_path+'/'+photo)}}" alt="{{ photo }}" loading="eager" />
+				{% else %}
+					{# Lazy load images below the fold #}
+					<img src="{{url_for('static', filename=photo_thumbnails_relative_path+'/'+photo)}}" alt="{{ photo }}" loading="lazy" />
+				{% endif %}
 			</a>
 		</div>
 	{% endfor %}
@@ -25,12 +31,15 @@ var $grid = $('.grid').masonry({
 	itemSelector: '.grid-item',
 	columnWidth: '.grid-sizer',
 	percentPosition: true,
-
 });
 
-// layout Masonry after each image loads
-$grid.imagesLoaded().progress( function() {
-	console.log("Loaded!");
+// Layout Masonry after initial images load
+$grid.imagesLoaded().progress( function(instance, image) {
+	$grid.masonry('layout');
+});
+
+// Handle lazy-loaded images as they load (for images below the fold)
+$(document).on('load', '.grid-item img[loading="lazy"]', function() {
 	$grid.masonry('layout');
 });
 
